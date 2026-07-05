@@ -1,0 +1,126 @@
+import React, { useState, useEffect } from 'react'
+import classNames from 'classnames'
+
+import {
+  CAvatar,
+  CButton,
+  CButtonGroup,
+  CCard,
+  CCardBody,
+  CCardFooter,
+  CCardHeader,
+  CCol,
+  CProgress,
+  CRow,
+  CTable,
+  CTableBody,
+  CTableDataCell,
+  CTableHead,
+  CTableHeaderCell,
+  CTableRow,
+} from '@coreui/react'
+import CIcon from '@coreui/icons-react'
+import {
+  cibCcAmex,
+  cibCcApplePay,
+  cibCcMastercard,
+  cibCcPaypal,
+  cibCcStripe,
+  cibCcVisa,
+  cibGoogle,
+  cibFacebook,
+  cibLinkedin,
+  cifBr,
+  cifEs,
+  cifFr,
+  cifIn,
+  cifPl,
+  cifUs,
+  cibTwitter,
+  cilCloudDownload,
+  cilPeople,
+  cilUser,
+  cilUserFemale,
+} from '@coreui/icons'
+
+// import { useDispatch } from 'react-redux';
+// import { addCarNumber, removeCarNumber } from '../../action'; 
+import { manageWebSocketConnections } from '../../websocketService';
+import DataCard from '../../components/DataCard';
+
+const ALPHA = 1; 
+let smoothSpeed = {}; 
+
+const Dashboard = () => {
+  const [data, setData] = useState({});
+  const [counts, setCounts] = useState({});
+  const [error, setError] = useState(null);
+  // const dispatch = useDispatch();
+  //const [ipSocket, setIpSocket] = useState("ws://localhost:4000");
+  const [ipSocket, setIpSocket] = useState("ws://34.143.131.92:4000");
+
+  const urls = [
+    ipSocket + '/car1',
+    ipSocket + '/car2',
+    ipSocket + '/car3',
+    ipSocket + '/car4',
+    ipSocket + '/car5',
+    ipSocket + '/car6',
+    ipSocket + '/car7',
+    ipSocket + '/car8',
+    ipSocket + '/car9',
+    ipSocket + '/car10',
+  ];
+
+  useEffect(() => {
+    const handleMessage = (url, message) => {
+      let parsedData = JSON.parse(message.data);
+
+      // parsedData[3] = Math.round(parsedData[3]);
+
+      //////////////////////////////////////////////////////////////////////
+
+      let rawSpeed = (Math.round(parsedData[3]) + 0.1) + Math.random() * 0.8;
+
+      if (!smoothSpeed[url]) {
+        smoothSpeed[url] = rawSpeed;
+      }
+
+      smoothSpeed[url] = ALPHA * rawSpeed + (1 - ALPHA) * smoothSpeed[url];
+      parsedData[3] = Math.round(smoothSpeed[url]);
+
+      setData((prevData) => ({
+        ...prevData,
+        [url]: parsedData,
+      }));
+
+      console.log(parsedData);
+    };
+
+    const handleError = (error) => {
+      setError(error);
+    };
+
+    const closeConnections = manageWebSocketConnections(urls, handleMessage, handleError);
+
+    return () => {
+      closeConnections();
+    };
+  }, []);
+
+  return (
+    <>
+      <CRow className="mb-2" xs={{ gutter: 3 }}>
+        {urls.map((url) => (
+          <CCol className="col-12 col-sm-12 col-md-6 col-lg-3 col-xl-2" key={url}>
+            <DataCard 
+              data={data[url]}
+            />
+          </CCol>
+        ))}
+      </CRow>
+    </>
+  )
+}
+
+export default Dashboard
